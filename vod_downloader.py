@@ -314,6 +314,49 @@ def _extract_exe_from_zip(zip_path: Path, exe_name: str, out_path: Path) -> bool
     return True
 
 
+
+def _get_latest_ytdlp_wheel_info() -> tuple[str, str, str]:
+    """
+    Returns (version, wheel_url, wheel_filename) for the latest yt-dlp release on PyPI.
+    We prefer the universal wheel (py3-none-any) when available.
+    """
+    with urllib.request.urlopen(YTDLP_PYPI_JSON_URL, timeout=30) as r:
+        data = json.loads(r.read().decode("utf-8"))
+
+    version = (data.get("info") or {}).get("version")
+    if not version:
+        raise RuntimeError("Could not determine latest yt-dlp version from PyPI JSON.")
+
+    candidates = (data.get("releases") or {}).get(version) or (data.get("urls") or [])
+    if not isinstance(candidates, list):
+        candidates = []
+
+    def _score(item: dict) -> int:
+        fn = str(item.get("filename") or "")
+        # Prefer universal wheel first
+        if fn.endswith("py3-none-any.whl"):
+            return 3
+        if fn.endswith(".whl"):
+            return 2
+        return 0
+
+    best = None
+    best_score = -1
+    for item in candidates:
+        if not isinstance(item, dict):
+            continue
+        if item.get("packagetype") != "bdist_wheel":
+            continue
+        score = _score(item)
+        if score > best_score and item.get("url") and item.get("filename"):
+            best = item
+            best_score = score
+
+    if not best:
+        raise RuntimeError(f"No wheel file found for yt-dlp {version} on PyPI.")
+
+    return version, str(best["url"]), str(best["filename"])
+
 def update_tools(app_dir: Path, logq: queue.Queue[str]) -> None:
     """
     Updates deno.exe, ffmpeg.exe, ffprobe.exe, ffplay.exe in app_dir.
@@ -325,6 +368,33 @@ def update_tools(app_dir: Path, logq: queue.Queue[str]) -> None:
     tmp.mkdir(parents=True, exist_ok=True)
 
     try:
+        # yt-dlp (Python module) update via PyPI wheel
+        try:
+            logq.put("▶ Updating yt-dlp…")
+            version, wheel_url, wheel_name = _get_latest_ytdlp_wheel_info()
+            wheel_path = tmp / wheel_name
+            logq.put(f"  Downloading {wheel_name} ({version})…")
+            _download_with_progress(wheel_url, wheel_path, logq)
+
+            # Install into app/_pydeps so it overrides the bundled yt-dlp
+            if YTDLP_PYDEPS_DIR.exists():
+                shutil.rmtree(YTDLP_PYDEPS_DIR, ignore_errors=True)
+            YTDLP_PYDEPS_DIR.mkdir(parents=True, exist_ok=True)
+
+            with zipfile.ZipFile(wheel_path, "r") as z:
+                z.extractall(YTDLP_PYDEPS_DIR)
+
+            # Reload in the running process so subsequent downloads use the new version immediately
+            try:
+                reload_yt_dlp()
+                yt_dlp_mod = get_yt_dlp()
+                active_ver = getattr(getattr(yt_dlp_mod, "version", None), "__version__", None) or "unknown"
+                logq.put(f"✅ yt-dlp updated. Active version: {active_ver}")
+            except Exception as e:
+                logq.put(f"✅ yt-dlp updated, but reload failed (restart app to apply): {e}")
+        except Exception as e:
+            logq.put(f"WARNING: yt-dlp update skipped: {e}")
+
         # --- deno ---
         logq.put("▶ Updating deno…")
         deno_zip = tmp / "deno.zip"
@@ -786,12 +856,11 @@ class App(tk.Tk):
                 p = Path(fn)
                 if p.suffix.lower() not in (".vtt", ".srt", ".ass", ".ttml"):
                     return
-                # Expect: <id>-<language>.vtt
-                parts = p.stem.split("-")
-                if len(parts) < 2:
+                # Expect: <video_id>-<language>.vtt  (video_id may contain '-' too)
+                if "-" not in p.stem:
                     return
-                lang = parts[-1]
-                new_name = p.with_name(p.stem[:-len(lang)] + lang.upper() + p.suffix)
+                base, lang = p.stem.rsplit("-", 1)
+                new_name = p.with_name(f"{base}-{lang.upper()}{p.suffix}")
                 try:
                     if new_name != p and p.exists():
                         p.rename(new_name)
@@ -870,3 +939,5 @@ if __name__ == "__main__":
         except Exception:
             pass
         raise
+YTDLP_PYPI_JSON_URL = "https://pypi.org/pypi/yt-dlp/json"
+
