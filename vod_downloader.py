@@ -2,6 +2,7 @@
 #
 # Welcome to Xefande's VOD Downloader 
 # Best friend of VOD editor guy.
+# It was created so that my video editor guy can easily download my streams for editing, and later we can upload the edited version of the broadcast back to YouTube.
 #
 
 from __future__ import annotations

@@ -1,0 +1,26 @@
+{
+  "out_dir": "downloads",
+  "vod_only": false,
+  "after": null,
+  "subs": true,
+  "subs_langs": [
+    "hu",
+    "en",
+    "de",
+    "sk",
+    "cs",
+    "pl",
+    "es",
+    "fr"
+  ],
+  "open_folder_after": true,
+  "quality_label": "Best (H.264+AAC MP4 ajánlott)",
+  "audio_only": false,
+  "audio_label": "Csak hang (m4a – gyors, konverzió nélkül)",
+  "concurrent_fragments": 4,
+  "retries": 10,
+  "fragment_retries": 10,
+  "folder_template": "%(upload_date>%Y-%m-%d)s+%(title).50B",
+  "file_template": "%(id)s.%(ext)s",
+  "merge_output_format": "mp4"
+}
