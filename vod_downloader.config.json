@@ -1,22 +1,22 @@
 {
   "out_dir": "downloads",
-  "vod_only": false,
   "after": null,
   "subs": true,
   "subs_langs": [
     "hu",
-    "en",
     "de",
+    "en",
     "sk",
     "cs",
     "pl",
     "es",
-    "fr"
+    "fr",
+    "it"
   ],
   "open_folder_after": true,
-  "quality_label": "Best (H.264+AAC MP4 ajánlott)",
+  "quality_label": "Best (H.264+AAC MP4 recommended)",
   "audio_only": false,
-  "audio_label": "Csak hang (m4a – gyors, konverzió nélkül)",
+  "audio_label": "Audio only (m4a – fast, no conversion)",
   "concurrent_fragments": 4,
   "retries": 10,
   "fragment_retries": 10,
