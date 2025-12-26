@@ -1,5 +1,4 @@
 \
-
 # ----------------------------
 # Created for VOD editor guys and for lokalization teams to allow
 # easy downloading of VODs and subitles from YouTube.
@@ -30,12 +29,6 @@ except Exception as e:
     print("On Windows it is usually included by default. Error:", e)
     sys.exit(1)
 
-try:
-    import yt_dlp
-except ImportError:
-    print("Missing dependency: yt-dlp")
-    print("Install: python -m pip install -U yt-dlp")
-    sys.exit(1)
 
 
 # ----------------------------
@@ -48,6 +41,32 @@ def get_app_dir() -> Path:
 
 
 APP_DIR = get_app_dir()
+
+# Optional yt-dlp self-update support:
+# If a newer yt_dlp package exists in APP_DIR/_pydeps, prefer it over the bundled one.
+YTDLP_PYDEPS_DIR = APP_DIR / "_pydeps"
+
+def _ensure_pydeps_first_on_syspath() -> None:
+    try:
+        p = str(YTDLP_PYDEPS_DIR)
+        if YTDLP_PYDEPS_DIR.exists() and p not in sys.path:
+            sys.path.insert(0, p)
+    except Exception:
+        pass
+
+def get_yt_dlp():
+    _ensure_pydeps_first_on_syspath()
+    import yt_dlp  # type: ignore
+    return yt_dlp
+
+def reload_yt_dlp():
+    _ensure_pydeps_first_on_syspath()
+    # Remove any previously imported yt_dlp modules, then import again from sys.path.
+    for k in list(sys.modules.keys()):
+        if k == "yt_dlp" or k.startswith("yt_dlp."):
+            del sys.modules[k]
+    import yt_dlp  # type: ignore
+    return yt_dlp
 DEFAULT_CONFIG_PATH = APP_DIR / "vod_downloader.config.json"
 
 DENO_EXE = APP_DIR / "deno.exe"
@@ -442,7 +461,7 @@ class App(tk.Tk):
         self.btn_save = ttk.Button(btns, text="Save settings", command=self._save_config_from_ui)
         self.btn_save.pack(side="left", padx=(10, 0))
 
-        self.btn_update = ttk.Button(btns, text="Update tools (deno/ffmpeg)", command=self._start_update_tools)
+        self.btn_update = ttk.Button(btns, text="Update tools", command=self._start_update_tools)
         self.btn_update.pack(side="left", padx=(10, 0))
 
         ttk.Button(btns, text="Clear log", command=self._clear_log).pack(side="left", padx=(10, 0))
@@ -781,6 +800,8 @@ class App(tk.Tk):
 
             ydl_opts["progress_hooks"].append(_subtitle_renamer)
 
+            yt_dlp = get_yt_dlp()
+
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 ydl.download(urls)
 
@@ -804,7 +825,7 @@ class App(tk.Tk):
 
         if not messagebox.askyesno(
             "Update tools",
-            "This will download and replace deno/ffmpeg tools in the app folder.\n\nContinue?",
+            "This will update yt-dlp + download and replace deno/ffmpeg tools in the app folder.\n\nContinue?",
         ):
             return
 
