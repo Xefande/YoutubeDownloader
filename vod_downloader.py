@@ -1,4 +1,3 @@
-\
 # ----------------------------
 # Created for VOD editor guys and for lokalization teams to allow
 # easy downloading of VODs and subitles from YouTube.
@@ -76,6 +75,7 @@ FFPLAY_EXE = APP_DIR / "ffplay.exe"
 
 # One-click updater sources (Windows x64)
 DENO_WIN64_ZIP_URL = "https://github.com/denoland/deno/releases/latest/download/deno-x86_64-pc-windows-msvc.zip"
+YTDLP_PYPI_JSON_URL = "https://pypi.org/pypi/yt-dlp/json"
 FFMPEG_ESSENTIALS_ZIP_URL = "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip"
 
 # Subtitles in UI (label, yt-dlp lang code)
@@ -374,7 +374,7 @@ def update_tools(app_dir: Path, logq: queue.Queue[str]) -> None:
             version, wheel_url, wheel_name = _get_latest_ytdlp_wheel_info()
             wheel_path = tmp / wheel_name
             logq.put(f"  Downloading {wheel_name} ({version})…")
-            _download_with_progress(wheel_url, wheel_path, logq)
+            _download_with_progress(wheel_url, wheel_path, logq, label="yt-dlp")
 
             # Install into app/_pydeps so it overrides the bundled yt-dlp
             if YTDLP_PYDEPS_DIR.exists():
@@ -939,5 +939,3 @@ if __name__ == "__main__":
         except Exception:
             pass
         raise
-YTDLP_PYPI_JSON_URL = "https://pypi.org/pypi/yt-dlp/json"
-
