@@ -6,23 +6,23 @@ set "SRC=%~dp0app"
 set "TARGET=%LOCALAPPDATA%\%APPNAME%"
 
 echo ========================================
-echo %APPNAME% telepito
-echo Cel mappa: "%TARGET%"
+echo %APPNAME% installer
+echo Target Folder: "%TARGET%"
 echo ========================================
 
 if not exist "%SRC%\%APPNAME%.exe" (
-  echo HIBA: Nem talalom az app mappaban a %APPNAME%.exe-t
-  echo Ellenorizd: "%SRC%"
+  echo Error: Cant find %APPNAME%.exe-t
+  echo Check that: "%SRC%"
   pause
   exit /b 1
 )
 
 if not exist "%TARGET%" mkdir "%TARGET%"
 
-echo Masolas...
+echo Copy...
 xcopy "%SRC%\*" "%TARGET%\" /E /I /Y >nul
 
-echo Parancsikon letrehozasa (Asztal + Start Menu)...
+echo Create shortcut (Desktop + Start Menu)...
 powershell -NoProfile -ExecutionPolicy Bypass -Command ^
   "$app='%TARGET%\%APPNAME%.exe';" ^
   "$wd='%TARGET%';" ^
@@ -36,8 +36,9 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command ^
   "$lnk2.TargetPath=$app; $lnk2.WorkingDirectory=$wd; $lnk2.IconLocation=$app; $lnk2.Save();"
 
 echo.
-echo KESZ! Indithatod az Asztalrol: "%APPNAME%"
-echo (A program mappaja: "%TARGET%")
+echo Done! Enjoy: "%APPNAME%"
+echo (Folder: "%TARGET%")
+echo ....... with love by Xefande
 echo.
 pause
 exit /b 0

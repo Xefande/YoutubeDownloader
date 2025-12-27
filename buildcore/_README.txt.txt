@@ -1,5 +1,5 @@
 # ----------------------------
-# Created for VOD editor guys and for lokalization teams to allow
+# Created for VOD editor guys and for lokalization buddies to allow
 # easy downloading of VODs and subitles from YouTube.
 # by Xefande
 # ----------------------------
