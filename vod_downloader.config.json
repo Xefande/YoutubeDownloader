@@ -1,26 +1,21 @@
 {
   "out_dir": "downloads",
   "after": null,
-  "subs": false,
+  "subs": true,
   "subs_langs": [
-    "hu",
-    "de",
     "en",
-    "sk",
-    "cs",
-    "pl",
-    "es",
-    "fr",
-    "it"
+    "hu"
   ],
   "open_folder_after": true,
-  "quality_label": "Best (H.264+AAC MP4 recommended)",
+  "quality_label": "1080p max",
+  "max_video_bitrate_kbps": 20000,
+  "audio_track_lang": "default",
   "audio_only": false,
-  "audio_label": "Audio only (m4a – fast, no conversion)",
+  "audio_label": "Audio only (mp3 – requires ffmpeg)",
   "concurrent_fragments": 4,
   "retries": 10,
   "fragment_retries": 10,
-  "folder_template": "%(upload_date>%Y-%m-%d)s+%(title).50B",
+  "folder_template": "%(upload_date>%Y-%m-%d)s+%(title).120B",
   "file_template": "%(id)s.%(ext)s",
   "merge_output_format": "mp4"
 }

@@ -129,8 +129,9 @@ AUDIO_TRACK_LANGS_UI: list[tuple[str, str]] = [
 ]
 
 
-def _lang_filter(code: str) -> str:
+def _lang_filter(code: str | None) -> str:
     # yt-dlp stores audio language as BCP47-ish codes (e.g., "en", "en-US"). Prefix match is safer.
+    # Accept None to match callers that may pass an optional value.
     if not code or code == "default":
         return ""
     return f"[language^={code}]"
@@ -214,7 +215,7 @@ def build_video_format(
     return "/".join(candidates)
 
 
-def build_audio_only_format(*, audio_preset_key: str, audio_lang_code: str) -> str:
+def build_audio_only_format(*, audio_preset_key: str, audio_lang_code: str | None) -> str:
     """Format selector for audio-only downloads with optional audio language."""
     lang = _lang_filter(audio_lang_code)
     if "m4a" in audio_preset_key.lower():
@@ -734,9 +735,7 @@ class App(tk.Tk):
     def _refresh_subs_ui(self):
         enabled = bool(self.var_subs.get())
         state = "normal" if enabled else "disabled"
-        for v in self.sub_lang_vars.values():
-            # checkbox widgets are bound to vars; disable frame by toggling children state
-            pass
+        # checkbox widgets are bound to vars; disable frame by toggling children state
         for child in self.subs_frame.winfo_children():
             try:
                 child.configure(state=state)
