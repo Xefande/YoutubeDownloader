@@ -80,23 +80,128 @@ FFMPEG_ESSENTIALS_ZIP_URL = "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-e
 
 # Subtitles in UI (label, yt-dlp lang code)
 SUB_LANGS_UI: list[tuple[str, str]] = [
-    ("Hungarian (HU)", "hu"),
-    ("German (DE)", "de"),
     ("English (EN)", "en"),
+    ("German (DE)", "de"),
+    ("Hungarian (HU)", "hu"),
+    ("Italian (IT)", "it"),
+    ("French (FR)", "fr"),
+    ("Spanish (ES)", "es"),
     ("Slovak (SK)", "sk"),
     ("Czech (CS)", "cs"),
     ("Polish (PL)", "pl"),
-    ("Spanish (ES)", "es"),
-    ("French (FR)", "fr"),
-    ("Italian (IT)", "it"),
 ]
 
-QUALITY_PRESETS: dict[str, str] = {
-    "Best (H.264+AAC MP4 recommended)": "bv*[vcodec^=avc1]+ba[acodec^=mp4a]/bv*+ba/b",
-    "Up to 1080p": "bv*[height<=1080][vcodec^=avc1]+ba[acodec^=mp4a]/b[height<=1080]/bv*+ba/b",
-    "Up to 720p": "bv*[height<=720][vcodec^=avc1]+ba[acodec^=mp4a]/b[height<=720]/bv*+ba/b",
-    "Up to 480p": "bv*[height<=480][vcodec^=avc1]+ba[acodec^=mp4a]/b[height<=480]/bv*+ba/b",
+QUALITY_PRESETS: dict[str, int | None] = {
+    "Best available (H.264+AAC MP4 preferred)": None,
+    "2160p max (4K)": 2160,
+    "1440p max (2K)": 1440,
+    "1080p max": 1080,
+    "720p max": 720,
+    "480p max": 480,
 }
+
+# Optional bitrate cap for the selected video stream.
+# Note: YouTube does not always provide every bitrate at every resolution.
+BITRATE_PRESETS_UI: dict[str, int | None] = {
+    "No limit": None,
+    "2 Mbps": 2000,
+    "4 Mbps": 4000,
+    "6 Mbps": 6000,
+    "8 Mbps": 8000,
+    "12 Mbps": 12000,
+    "20 Mbps": 20000,
+    "40 Mbps": 40000,
+}
+
+# Audio track language selection (only applies if the video provides multiple audio tracks).
+# Stored as a short code used in yt-dlp format filters.
+AUDIO_TRACK_LANGS_UI: list[tuple[str, str]] = [
+    ("Default (original)", "default"),
+    ("English", "en"),
+    ("German", "de"),
+    ("Italian", "it"),
+    ("French", "fr"),
+    ("Spanish", "es"),
+    ("Polish", "pl"),
+    ("Czech", "cs"),
+    ("Slovak", "sk"),
+    ("Hungarian", "hu"),
+]
+
+
+def _lang_filter(code: str) -> str:
+    # yt-dlp stores audio language as BCP47-ish codes (e.g., "en", "en-US"). Prefix match is safer.
+    if not code or code == "default":
+        return ""
+    return f"[language^={code}]"
+
+
+def choose_merge_output_format(default_fmt: str, max_height: int | None) -> str:
+    # 2K/4K (and sometimes even 1440p) frequently comes as VP9/AV1 (WEBM).
+    # MKV is the most reliable container for merging arbitrary codecs.
+    if max_height and max_height > 1080:
+        return "mkv"
+    return default_fmt
+
+
+def build_video_format(
+    *,
+    max_height: int | None,
+    max_video_bitrate_kbps: int | None,
+    audio_lang_code: str,
+) -> str:
+    """Build a robust yt-dlp format selector for video+audio.
+
+    Strategy:
+    - Prefer H.264 (avc1) + AAC (mp4a) first (best for MP4 editing workflows).
+    - If not available (common above 1080p), fall back to any video+audio.
+    - If a bitrate cap is set, try it first but fall back without the cap if needed.
+    - If an audio language is chosen, try it first but fall back to default audio.
+    """
+
+    h = f"[height<={max_height}]" if max_height else ""
+    br = f"[tbr<={int(max_video_bitrate_kbps)}]" if max_video_bitrate_kbps else ""
+    lang = _lang_filter(audio_lang_code)
+
+    # With bitrate cap
+    candidates: list[str] = []
+    # H.264 + AAC
+    if lang:
+        candidates.append(f"bv*{h}[vcodec^=avc1]{br}+ba[acodec^=mp4a]{lang}")
+    candidates.append(f"bv*{h}[vcodec^=avc1]{br}+ba[acodec^=mp4a]")
+    # Any codec (still with the bitrate cap)
+    if lang:
+        candidates.append(f"bv*{h}{br}+ba{lang}")
+    candidates.append(f"bv*{h}{br}+ba")
+
+    # Fallback without bitrate cap (if a cap was set and nothing matched)
+    if br:
+        if lang:
+            candidates.append(f"bv*{h}[vcodec^=avc1]+ba[acodec^=mp4a]{lang}")
+        candidates.append(f"bv*{h}[vcodec^=avc1]+ba[acodec^=mp4a]")
+        if lang:
+            candidates.append(f"bv*{h}+ba{lang}")
+        candidates.append(f"bv*{h}+ba")
+
+    # Final fallback: best single-file format (rarely used, but helps when split streams are unavailable)
+    candidates.append(f"b{h}")
+
+    # Join with yt-dlp fallback separator
+    return "/".join(candidates)
+
+
+def build_audio_only_format(*, audio_preset_key: str, audio_lang_code: str) -> str:
+    """Format selector for audio-only downloads with optional audio language."""
+    lang = _lang_filter(audio_lang_code)
+    if "m4a" in audio_preset_key.lower():
+        # Prefer m4a (AAC) for speed; fall back to bestaudio.
+        if lang:
+            return f"bestaudio[ext=m4a]{lang}/bestaudio{lang}/bestaudio[ext=m4a]/bestaudio/b"
+        return "bestaudio[ext=m4a]/bestaudio/b"
+    # MP3 preset: we still download bestaudio (optionally language-filtered) and convert.
+    if lang:
+        return f"bestaudio{lang}/bestaudio/b"
+    return "bestaudio/b"
 
 AUDIO_PRESETS: dict[str, dict[str, Any]] = {
     "Audio only (m4a – fast, no conversion)": {
@@ -125,7 +230,9 @@ class AppConfig:
 
     open_folder_after: bool = False
 
-    quality_label: str = "Best (H.264+AAC MP4 recommended)"
+    quality_label: str = "Best available (H.264+AAC MP4 preferred)"
+    max_video_bitrate_kbps: int | None = None
+    audio_track_lang: str = "default"
     audio_only: bool = False
     audio_label: str = "Audio only (m4a – fast, no conversion)"
 
@@ -167,10 +274,19 @@ def load_or_create_config(config_path: Path) -> AppConfig:
 
     # 2) old Hungarian preset labels -> new English ones
     quality_migration = {
-        "Best (H.264+AAC MP4 ajánlott)": "Best (H.264+AAC MP4 recommended)",
-        "1080p max": "Up to 1080p",
-        "720p max": "Up to 720p",
-        "480p max": "Up to 480p",
+        # Older labels → current labels
+        "Best (H.264+AAC MP4 recommended)": "Best available (H.264+AAC MP4 preferred)",
+        "Best (H.264+AAC MP4 ajánlott)": "Best available (H.264+AAC MP4 preferred)",
+        "Up to 2160p": "2160p max (4K)",
+        "2160p max": "2160p max (4K)",
+        "Up to 1440p": "1440p max (2K)",
+        "1440p max": "1440p max (2K)",
+        "Up to 1080p": "1080p max",
+        "1080p max": "1080p max",
+        "Up to 720p": "720p max",
+        "720p max": "720p max",
+        "Up to 480p": "480p max",
+        "480p max": "480p max",
     }
     audio_migration = {
         "Csak hang (m4a – gyors, konverzió nélkül)": "Audio only (m4a – fast, no conversion)",
@@ -180,6 +296,33 @@ def load_or_create_config(config_path: Path) -> AppConfig:
         raw["quality_label"] = quality_migration.get(raw["quality_label"], raw["quality_label"])
     if isinstance(raw.get("audio_label"), str):
         raw["audio_label"] = audio_migration.get(raw["audio_label"], raw["audio_label"])
+
+    # 3) sanitize audio track language and bitrate cap
+    label_to_code = {name: code for name, code in AUDIO_TRACK_LANGS_UI}
+    codes = set(label_to_code.values())
+
+    if isinstance(raw.get("audio_track_lang"), str):
+        # Allow either a code ("en") or a UI label ("English")
+        v = raw["audio_track_lang"].strip()
+        if v in label_to_code:
+            v = label_to_code[v]
+        if v not in codes:
+            v = "default"
+        raw["audio_track_lang"] = v
+
+    if "max_video_bitrate_kbps" in raw:
+        v = raw.get("max_video_bitrate_kbps")
+        if isinstance(v, str):
+            v = v.strip()
+            if v in BITRATE_PRESETS_UI:
+                v = BITRATE_PRESETS_UI[v]
+        try:
+            v_int = int(v) if v is not None else None
+            if v_int is not None and v_int <= 0:
+                v_int = None
+            raw["max_video_bitrate_kbps"] = v_int
+        except Exception:
+            raw["max_video_bitrate_kbps"] = None
 
     # drop unknown keys
     allowed = {f.name for f in fields(AppConfig)}
@@ -489,6 +632,20 @@ class App(tk.Tk):
         self.var_quality = tk.StringVar()
         self.cmb_quality = ttk.Combobox(mode, textvariable=self.var_quality, values=list(QUALITY_PRESETS.keys()), state="readonly", width=44)
         self.cmb_quality.grid(row=1, column=2, sticky="w", pady=(8, 0))
+        ttk.Label(mode, text="Max bitrate:").grid(row=2, column=1, sticky="e", padx=(14, 6), pady=(8, 0))
+        self.var_bitrate = tk.StringVar(value=list(BITRATE_PRESETS_UI.keys())[0])
+        self.cmb_bitrate = ttk.Combobox(
+            mode, textvariable=self.var_bitrate, values=list(BITRATE_PRESETS_UI.keys()), state="readonly", width=44
+        )
+        self.cmb_bitrate.grid(row=2, column=2, sticky="w", pady=(8, 0))
+
+        ttk.Label(mode, text="Audio track:").grid(row=3, column=1, sticky="e", padx=(14, 6), pady=(8, 0))
+        self.var_audio_track = tk.StringVar(value=AUDIO_TRACK_LANGS_UI[0][0])
+        self.cmb_audio_track = ttk.Combobox(
+            mode, textvariable=self.var_audio_track, values=[x[0] for x in AUDIO_TRACK_LANGS_UI], state="readonly", width=44
+        )
+        self.cmb_audio_track.grid(row=3, column=2, sticky="w", pady=(8, 0))
+
 
         self.var_subs = tk.BooleanVar()
         self.var_dry = tk.BooleanVar()
@@ -567,9 +724,14 @@ class App(tk.Tk):
         if audio_only:
             self.cmb_quality.configure(state="disabled")
             self.cmb_audio.configure(state="readonly")
+            self.cmb_bitrate.configure(state="disabled")
         else:
             self.cmb_quality.configure(state="readonly")
             self.cmb_audio.configure(state="disabled")
+            self.cmb_bitrate.configure(state="readonly")
+
+        # Always allow choosing an audio track language (falls back if not available).
+        self.cmb_audio_track.configure(state="readonly")
 
     def _browse_out(self):
         initial = self.var_out.get().strip() or str(APP_DIR)
@@ -601,7 +763,23 @@ class App(tk.Tk):
         self.var_open_folder.set(self.cfg.open_folder_after)
 
         self.var_audio_only.set(self.cfg.audio_only)
-        self.var_quality.set(self.cfg.quality_label if self.cfg.quality_label in QUALITY_PRESETS else list(QUALITY_PRESETS.keys())[0])
+        self.var_quality.set(
+            self.cfg.quality_label if self.cfg.quality_label in QUALITY_PRESETS else list(QUALITY_PRESETS.keys())[0]
+        )
+
+        # Max bitrate
+        bitrate_label = next(
+            (k for k, v in BITRATE_PRESETS_UI.items() if v == self.cfg.max_video_bitrate_kbps),
+            list(BITRATE_PRESETS_UI.keys())[0],
+        )
+        self.var_bitrate.set(bitrate_label)
+
+        # Audio track language
+        audio_track_label = next(
+            (name for name, code in AUDIO_TRACK_LANGS_UI if code == self.cfg.audio_track_lang),
+            AUDIO_TRACK_LANGS_UI[0][0],
+        )
+        self.var_audio_track.set(audio_track_label)
         self.var_audio_label.set(self.cfg.audio_label if self.cfg.audio_label in AUDIO_PRESETS else list(AUDIO_PRESETS.keys())[0])
 
         # subtitle checkboxes
@@ -650,6 +828,15 @@ class App(tk.Tk):
             if not subs_langs:
                 # sane fallback
                 subs_langs = ["en"]
+
+        # Max bitrate and audio track language
+        bitrate_label = (self.var_bitrate.get() or "").strip()
+        if bitrate_label not in BITRATE_PRESETS_UI:
+            bitrate_label = list(BITRATE_PRESETS_UI.keys())[0]
+        max_video_bitrate_kbps = BITRATE_PRESETS_UI.get(bitrate_label)
+
+        label_to_code = {name: code for name, code in AUDIO_TRACK_LANGS_UI}
+        audio_track_lang = label_to_code.get(self.var_audio_track.get(), "default")
 
         return AppConfig(
             out_dir=out_dir,
@@ -712,10 +899,22 @@ class App(tk.Tk):
         self._log(f"URLs: {len(urls)}")
         self._log(f"Output: {cfg.out_dir}")
         self._log(f"Mode: {'audio only' if cfg.audio_only else 'video'}")
+
+        audio_track_label = next(
+            (name for name, code in AUDIO_TRACK_LANGS_UI if code == cfg.audio_track_lang),
+            AUDIO_TRACK_LANGS_UI[0][0],
+        )
+        self._log(f"Audio track: {audio_track_label}")
+
         if cfg.audio_only:
             self._log(f"Audio preset: {cfg.audio_label}")
         else:
             self._log(f"Quality preset: {cfg.quality_label}")
+            bitrate_label = next(
+                (k for k, v in BITRATE_PRESETS_UI.items() if v == cfg.max_video_bitrate_kbps),
+                list(BITRATE_PRESETS_UI.keys())[0],
+            )
+            self._log(f"Max bitrate: {bitrate_label}")
         if cfg.after:
             self._log(f"Filter: upload_date >= {parse_after_date(cfg.after)}")
         else:
@@ -775,11 +974,19 @@ class App(tk.Tk):
                             self.log_queue.put("✅ Media download finished, merging/post-processing…")
 
             # format selection
+            a: dict[str, Any] | None = None
+            max_height: int | None = None
+
             if cfg.audio_only:
                 a = AUDIO_PRESETS.get(cfg.audio_label, list(AUDIO_PRESETS.values())[0])
-                fmt = a["format"]
+                fmt = build_audio_only_format(audio_preset_key=cfg.audio_label, audio_lang_code=cfg.audio_track_lang)
             else:
-                fmt = QUALITY_PRESETS.get(cfg.quality_label, list(QUALITY_PRESETS.values())[0])
+                max_height = QUALITY_PRESETS.get(cfg.quality_label)
+                fmt = build_video_format(
+                    max_height=max_height,
+                    max_video_bitrate_kbps=cfg.max_video_bitrate_kbps,
+                    audio_lang_code=cfg.audio_track_lang,
+                )
 
             ydl_opts: dict[str, Any] = {
                 "paths": {"home": str(out_dir)},
