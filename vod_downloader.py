@@ -135,6 +135,25 @@ def _lang_filter(code: str) -> str:
         return ""
     return f"[language^={code}]"
 
+def _tbr_filter(kbps: int | None) -> str:
+    """
+    Return a yt-dlp format selector fragment that caps total bitrate (tbr).
+    Expects kbps (kilobits per second). Returns an empty string when no cap is set
+    or when an invalid value is provided.
+
+    Examples:
+      None -> ""
+      2000 -> "[tbr<=2000]"
+    """
+    if kbps is None:
+        return ""
+    try:
+        v = int(kbps)
+    except Exception:
+        return ""
+    if v <= 0:
+        return ""
+    return f"[tbr<={v}]"
 
 def choose_merge_output_format(default_fmt: str, max_height: int | None) -> str:
     # 2K/4K (and sometimes even 1440p) frequently comes as VP9/AV1 (WEBM).
@@ -144,49 +163,54 @@ def choose_merge_output_format(default_fmt: str, max_height: int | None) -> str:
     return default_fmt
 
 
+
 def build_video_format(
     *,
     max_height: int | None,
     max_video_bitrate_kbps: int | None,
-    audio_lang_code: str,
+    audio_lang_code: str | None,
 ) -> str:
-    """Build a robust yt-dlp format selector for video+audio.
+    """
+    Build a yt-dlp format selector string.
 
-    Strategy:
-    - Prefer H.264 (avc1) + AAC (mp4a) first (best for MP4 editing workflows).
-    - If not available (common above 1080p), fall back to any video+audio.
-    - If a bitrate cap is set, try it first but fall back without the cap if needed.
-    - If an audio language is chosen, try it first but fall back to default audio.
+    Goals:
+    - For <=1080p presets: prefer H.264 video + AAC audio in MP4 when available (editing-friendly),
+      then fall back to any codec/container within the same height cap.
+    - For 1440p/2160p presets: prioritize getting the requested resolution (even if VP9/AV1),
+      and only prefer H.264+AAC as a fallback.
+
+    Notes:
+    - YouTube often does NOT provide H.264 at 1440p/2160p. If we put the H.264 candidate first,
+      yt-dlp will happily pick 1080p H.264 and never try the higher-res fallback.
+    - Therefore, for >1080p we put the "any codec" candidate first.
     """
 
     h = f"[height<={max_height}]" if max_height else ""
-    br = f"[tbr<={int(max_video_bitrate_kbps)}]" if max_video_bitrate_kbps else ""
+    br = _tbr_filter(max_video_bitrate_kbps)
     lang = _lang_filter(audio_lang_code)
 
-    # With bitrate cap
     candidates: list[str] = []
-    # H.264 + AAC
-    if lang:
-        candidates.append(f"bv*{h}[vcodec^=avc1]{br}+ba[acodec^=mp4a]{lang}")
-    candidates.append(f"bv*{h}[vcodec^=avc1]{br}+ba[acodec^=mp4a]")
-    # Any codec (still with the bitrate cap)
-    if lang:
+
+    # 2K/4K: resolution first (any codec), then MP4-friendly fallback
+    if max_height and max_height > 1080:
+        # Try highest <= max_height regardless of codec/container.
         candidates.append(f"bv*{h}{br}+ba{lang}")
+        candidates.append(f"bv*{h}{br}+ba")
+
+        # If that fails for some reason, try the MP4-friendly path.
+        candidates.append(f"bv*{h}[vcodec^=avc1]{br}+ba[acodec^=mp4a]{lang}")
+        candidates.append(f"bv*{h}[vcodec^=avc1]{br}+ba[acodec^=mp4a]")
+
+        # Last resort.
+        candidates.append(f"b{h}{br}")
+        return "/".join(candidates)
+
+    # Best / <=1080p: MP4-friendly first
+    candidates.append(f"bv*{h}[vcodec^=avc1]{br}+ba[acodec^=mp4a]{lang}")
+    candidates.append(f"bv*{h}[vcodec^=avc1]{br}+ba[acodec^=mp4a]")
+    candidates.append(f"bv*{h}{br}+ba{lang}")
     candidates.append(f"bv*{h}{br}+ba")
-
-    # Fallback without bitrate cap (if a cap was set and nothing matched)
-    if br:
-        if lang:
-            candidates.append(f"bv*{h}[vcodec^=avc1]+ba[acodec^=mp4a]{lang}")
-        candidates.append(f"bv*{h}[vcodec^=avc1]+ba[acodec^=mp4a]")
-        if lang:
-            candidates.append(f"bv*{h}+ba{lang}")
-        candidates.append(f"bv*{h}+ba")
-
-    # Final fallback: best single-file format (rarely used, but helps when split streams are unavailable)
-    candidates.append(f"b{h}")
-
-    # Join with yt-dlp fallback separator
+    candidates.append(f"b{h}{br}")
     return "/".join(candidates)
 
 
@@ -847,6 +871,8 @@ class App(tk.Tk):
             quality_label=quality_label,
             audio_only=audio_only,
             audio_label=audio_label,
+            max_video_bitrate_kbps=max_video_bitrate_kbps,
+            audio_track_lang=audio_track_lang,
             concurrent_fragments=self.cfg.concurrent_fragments,
             retries=self.cfg.retries,
             fragment_retries=self.cfg.fragment_retries,
@@ -1018,9 +1044,10 @@ class App(tk.Tk):
                 # Enables automatic download of remote EJS solver script (recommended by yt-dlp)
                 ydl_opts["remote_components"] = ["ejs:github"]
 
-            # Video mode: prefer mp4 merge
+            # Video mode: select merge container (MP4 for <=1080, MKV for 2K/4K)
             if not cfg.audio_only:
-                ydl_opts["merge_output_format"] = cfg.merge_output_format
+                effective_merge = choose_merge_output_format(cfg.merge_output_format, max_height)
+                ydl_opts["merge_output_format"] = effective_merge
 
             # Subtitles
             if cfg.subs:
