@@ -1,0 +1,13 @@
+# Runtime dependencies used by the tested Windows release.
+# Resolved from PyPI stable releases on 2026-10-21 for Python 3.12.
+yt-dlp[default]==2026.8.19
+brotli==1.2.0
+certifi==2026.10.19
+mutagen==1.48.1
+pycryptodomex==3.24.1
+requests==2.34.2
+urllib3==2.8.0
+websockets==17.3
+yt-dlp-ejs==0.8.0
+charset-normalizer==3.5.2
+idna==3.20

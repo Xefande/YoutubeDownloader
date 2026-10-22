@@ -1,212 +1,95 @@
-# Youtube Downloader
+<img src="yt_downloader/assets/logo-256.png" alt="YouTube Downloader logo" width="96" height="96">
 
-Created for the VOD editor guy and for localization buddies to allow easy downloading of VODs and subtitles from YouTube.
+# YouTube Downloader
 
-With this app, you (or your **video editor**) can easily download your stream after the live broadcast has finished.
+A free, ad-free Windows app for downloading YouTube VODs, audio and subtitles. Built for streamers, video editors and localization teams who want their files ready to work with.
 
-It’s also useful for team members responsible for **localizing your videos**, as they can quickly download both the video **and** its subtitles as separate files.
+**Version 1.4.1** · **Windows 10/11 x64** · **No Python installation needed for the release ZIP**
 
-## ⚡ Quick Start (30 seconds)
+**Official website:** [youtubedownloader.xefande.com](https://youtubedownloader.xefande.com/)
 
-1. Go to **Releases** and download the latest **`YTDownloader.zip`**
-2. Unzip it anywhere (example: `C:\Tools\YTDownloader\`)
-3. Double click **`Install.cmd`** hit **Enter**
-4. Launch **YTDownloader** from the **Desktop shortcut**
-5. Paste one or more YouTube URLs (**one per line**)
-6. Pick your **output folder**
-7. Choose:
-   - **Quality** (1080p MP4 recommended) or **2K/4K (MKV)**
-   - Optional: **Audio track language**
-   - Optional: **Subtitles**
-8. Click **Start Download**
+[Download for Windows](https://github.com/Xefande/YoutubeDownloader/releases/latest) · [Changelog](CHANGELOG.md) · [Report an issue](https://github.com/Xefande/YoutubeDownloader/issues)
 
-✅ If anything breaks (missing formats / extraction issues), click **Update Tools** and try again.
+## Get started
 
-🎥 Preview:  
+1. Download `YouTube-Downloader-v1.4.1-win64.zip` from [Releases](https://github.com/Xefande/YoutubeDownloader/releases).
+2. Extract the complete ZIP and run `Install.cmd`.
+3. Open **YouTube Downloader** from the Desktop or Start Menu.
+4. Paste your YouTube links, one per line, and choose an output folder.
+5. Select video quality or audio-only mode. Choose an audio language and subtitle languages if needed.
+6. Click **Start download** and let the app process the list.
 
-https://github.com/user-attachments/assets/d8e1caf0-61eb-4d9c-9735-dae3e5b6dbad
+For portable use, keep the extracted package together and run `app\YTDownloader.exe` directly. The release includes Deno and the FFmpeg tools needed for extraction, merging and audio conversion.
 
-## Main Features
-### Download video
-- **MP4 downloads (recommended for 1080p and below)**
-  - Quality presets: **480p / 720p / 1080p**
-  - Preferred formats: **H.264 + AAC MP4**
-- **High-resolution downloads**
-  - **2K (1440p)** and **4K (2160p)** support
-  - High-res downloads are saved as **MKV** (more reliable for VP9/AV1 + audio merging)
-### Download subtitles
-- Download subtitles as **separate files**
-- Languages: **HU, EN, DE, IT, FR, ES, SK, CZ, PL**
-### Select audio channel
- - Choose which **audio language/track** to download with the video
- - Languages: **HU, EN, DE, IT, FR, ES, SK, CZ, PL, Default**
-### Download audio-only
-- **M4A** (fast, no conversion)
-- **MP3** (main audio track)
-### Select bitrate
-  - Set a maximum video bitrate to control **file size** and **bandwidth usage** (2K / 4K)
-  - Available bitrate settings: 2 Mbps, 4 Mbps, 6 Mbps, 8 Mbps, 12 Mbps, 20 Mbps, 40 Mbps, No limit
- 
----
+## What you can do
 
-## Quality of life
+- **Download a batch of videos.** Paste multiple links, including a list of 50, and start them together. Videos are processed in sequence; playlist links are supported too.
+- **Choose your video quality.** Use Best available, 480p, 720p, 1080p, 1440p or 2160p/4K presets. The app selects from the formats available on YouTube.
+- **Keep long VODs.** There is no built-in video-duration limit. The complete recording must be available from YouTube, with enough free disk space for the download and merge.
+- **Select a preferred audio language.** Choose one language for a video's audio track. If a suitable track is unavailable, another available track may be used.
+- **Download several subtitle languages.** Select multiple languages at once. Uploaded and automatic captions are requested where available and saved as separate files.
+- **Export audio.** Use M4A-preferred downloading without conversion, or convert to MP3 with FFmpeg.
+- **Manage storage.** Select a lower resolution or an available lower-bitrate video format. Bitrate presets range from 2 to 40 Mbps, with a No limit option.
+- **Organize your files.** Choose the destination in the app. By default, each video gets a folder named with its upload date and title, and media files use the video ID.
 
-- Paste **multiple video URLs** (one per line)
-- Choose **output folder**
-- Creates a **separate subfolder per video** (upload date + title)
-- Clean filenames:
-  - Video: `<VIDEO_ID>.mp4`
-  - Subtitles: `<VIDEO_ID>-<LANG>.vtt` (example: `dSPc5GHMydw-EN.vtt`)
-- Built-in **Tool Updater**
-  - Updates: `deno.exe`, `ffmpeg.exe`, `ffprobe.exe`, `ffplay.exe` with one click
+The interface is in English. Available content languages: **English (EN), German (DE), Hungarian (HU), Italian (IT), French (FR), Spanish (ES), Slovak (SK), Czech (CZ) and Polish (PL)**.
 
----
+Audio selection uses one preferred language per video. Subtitles can use several selected languages in the same download. Availability depends on the video; the app does not translate or create missing tracks.
 
-## Download (Recommended)
+## Everyday controls
 
-Go to the **Releases** page and download the latest **`YTDownloader.zip`**.
+- Follow progress and results in the activity log, including warnings, partial downloads and cancellation.
+- Use **Ctrl+Enter** to start and **Esc** to request cancellation. An active network request or conversion may need to finish before the app stops.
+- Use **After date** to filter videos by upload date.
+- Enable **Dry-run** to check extraction without downloading media.
+- Use **Update tools** to refresh yt-dlp, Deno, FFmpeg, FFprobe and FFplay when extraction or format selection needs an update.
 
----
+Download history is stored in `.ytdlp_archive.txt` inside the output folder to help skip videos already downloaded there. Use a different output folder when you want another quality or language version of the same video.
 
-## Installation
+Advanced folder and filename patterns can be changed through `folder_template` and `file_template` in `vod_downloader.config.json`. Close the app before editing that file.
 
-1. Download **`YTDownloader.zip`** from the latest Release
-2. Unzip it anywhere (e.g. `C:\Tools\YTDownloader\`)
-3. Run **`Install.cmd`**
-4. Start the app from the **Desktop shortcut** (or Start Menu)
+## Install, upgrade or remove
 
-### Uninstall
+The installer uses `%LOCALAPPDATA%\YTDownloader` and creates **YouTube Downloader** shortcuts. The window title is **Xefande's Vod Downloader**.
 
-- Close the app
-- Run the included `Uninstall.cmd`, **or** delete:
-  - `%LOCALAPPDATA%\YTDownloader`
+**Upgrading:** close the running app, extract the new release and run its `Install.cmd`. Existing settings and downloads are preserved. There is no need to uninstall first.
 
----
+**Removing:** close the app and run `Uninstall.cmd` from the current release package. It removes the managed application files and shortcuts while keeping settings, downloads and updated Python tools.
 
-## VOD Downloader UI
+**Update tools** updates the download components. To update the application itself, install a newer release ZIP.
 
-# YTDownloader (GUI) – YouTube VOD / Video Downloader for Editors
+## A few useful details
 
-A small Windows-friendly GUI tool to download YouTube videos (and optional subtitles) to your PC.  
-Designed so an editor can install it by: **unzip → run `Install.cmd` → start from Desktop shortcut**. *_no programming skills required_
+**Why MKV for 1440p and 4K?** The high-resolution presets use MKV to combine the available video and audio streams. The lower-resolution presets prefer H.264 video and AAC audio in MP4, with fallbacks when those formats are unavailable.
 
-<img width="1043" height="998" alt="vodDownloaderPro" src="https://github.com/user-attachments/assets/31608626-0268-4a7e-9f4d-64ad95052092" />
+**Does a bitrate setting guarantee a file size?** It filters available source formats rather than re-encoding the video. The final size depends on duration, video and audio, and a very restrictive setting may leave no suitable format.
 
----
+**Missing audio, subtitles or formats?** Try **Update tools**, then check whether the requested content is available on that video. YouTube restrictions, rate limits and network conditions can affect downloads. For a rate-limit response, wait before retrying.
 
-## Download (Recommended)
+## Support and contact
 
-Go to the **Releases** page and download the latest `YTDownloader.zip`.
+If the app helps with your work, you can [support development on the website](https://youtubedownloader.xefande.com/#support).
 
-### Install
-1. Unzip `YTDownloader.zip`
-2. Double click `Install.cmd`
-3. Start **YTDownloader** from the Desktop shortcut (or Start Menu)
+Have an idea for a custom app, website, Discord bot or game? [Get in touch](mailto:software@xefande.com), or explore more free tools from [Xefande Software Development](https://software.xefande.com/).
 
-### Uninstall
-- Run `Uninstall.cmd` (if included), or delete:
-  - `%LOCALAPPDATA%\YTDownloader`
+## For developers
 
----
+Use **Windows x64 and Python 3.12 x64**. Clone this repository or download its source ZIP, then open a terminal in the project folder.
 
-## Feature details
+To run the application from source:
 
-- Paste one or multiple youtube URLs (one per line)
-- Choose:
-  - Output folder
-  - Video quality preset (H.264 + AAC MP4 preferred presets)
-  - Audio-only mode
-  - Subtitle languages: **HU, EN, DE, IT, SK, CS, PL, ES, FR**
-- Creates a dedicated subfolder per item (upload date + title)
-- Built-in **“Update tools”** button to refresh:
-  - `deno.exe`
-  - `ffmpeg.exe`, `ffprobe.exe`, `ffplay.exe`
-- Uses a portable cache folder inside the output directory (`.ytdlp_cache`)
-
----
-
-## Requirements (End User)
-
-- Windows 10/11
-- No Python installation required (Release build includes the app)
-
----
-
-## FAQ
-
-### Why is 2K/4K saved as MKV instead of MP4?
-YouTube often serves 2K/4K streams using **VP9 or AV1** video codecs. MP4 merging can be unreliable in these cases, while **MKV is the most stable container** for high-res (video + audio).
-
-### I selected “Italian audio”, but it still downloads German voicover. Why?
-Usually one of these is happening:
-- The video **does not contain** a Italian audio track, that case the downloaded audio chanell is the videos default audio track
-- The track exists, but YouTube/metadata doesn’t label it cleanly
-- YouTube serves the chosen track differently for that video
-
-✅ Tip: Try **Update Tools**, then retry. If it still happens, that specific video likely has no IT track available.
-
-### What does “Max bitrate (2K/4K)” do?
-It sets an upper limit on the selected **video bitrate**, so even at 2K/4K the downloader avoids extremely large streams. This helps manage:
-- download time
-- file size
-- bandwidth usage
-
-### I get `HTTP 429` while downloading subtitles. Is it a bug?
-No, its not a but. - YouTube is rate-limiting or you try to download a non-existing subtitle language.  
-✅ Fix: Try again later, or download **fewer subtitle languages** at once. Most of the time, the download will happen despite the warning.
-
-### Some formats are missing / extraction fails. What should I do?
-Click **Update Tools**. It refreshes:
-- Deno + FFmpeg tools (used for extraction/merge)
-- **yt-dlp** (the extractor that needs frequent updates when YouTube changes)
-
-### What is “Update Tools” exactly updating?
-One click updates:
-- `deno.exe`
-- `ffmpeg.exe`, `ffprobe.exe`, `ffplay.exe`
-- `yt-dlp`
-
-After that, the app will use the updated versions automatically.
-
-### Where are the downloaded files saved?
-- You choose an output folder in the UI.
-- The app creates one subfolder per item (upload date + title).
-- File naming is kept clean:
-  - Video: `<VIDEO_ID>.<ext>`
-  - Subtitles: `<VIDEO_ID>-<LANG>.vtt`
-
----
-
-## Notes
-
-- **Subtitle HTTP 429 warnings**  
-  YouTube is rate-limiting. Try again later or download fewer subtitle languages at once.
-
-- **Missing formats / extraction issues**  
-  Use **Tool Updater** (it refreshes Deno/FFmpeg and updates **yt-dlp**, which is the most common fix when YouTube changes something).
-
-- **2K/4K output is MKV**  
-  This is intentional for stability: YouTube high-res often uses VP9/AV1, and MKV merges more reliably than MP4.
-
- 
-> **Important:** This project is for legitimate use cases (e.g., downloading your own channel VODs, or content you have the rights/permission to download).
-
----
-
-## For Developers
-
-### Setup (Python)
 ```powershell
-py -m venv .venv
-.\.venv\Scripts\activate
-python -m pip install -U pip
-pip install -U yt-dlp pyinstaller
+py -3.12 -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+.\.venv\Scripts\python.exe vod_downloader.py
 ```
-### Run (dev)
+
+To build the Windows executable:
+
 ```powershell
-python VOD_Downloader.py
+.\Build.cmd
 ```
-### Build (dev)
-```powershell
-pyinstaller --noconfirm --clean --onefile --windowed VOD_Downloader.py
-```
+
+`Build.cmd` creates a `.venv-build` environment, installs the pinned dependencies and produces **`dist\YTDownloader.exe`**, including the application icon and version information. Use **Update tools** before the first download from a source run or a source-built EXE to obtain Deno and FFmpeg.
+
+The `buildcore/` folder contains the installer and uninstaller source files and a default configuration. Those scripts require a complete release payload in their `app/` folder. `Build.cmd` builds the standalone EXE; it does not assemble the installer ZIP.
