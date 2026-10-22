@@ -21,6 +21,10 @@ A free, ad-free Windows app for downloading YouTube VODs, audio and subtitles. B
 
 For portable use, keep the extracted package together and run `app\YTDownloader.exe` directly. The release includes Deno and the FFmpeg tools needed for extraction, merging and audio conversion.
 
+
+<img width="1407" height="790" alt="image" src="https://github.com/user-attachments/assets/2a25b0c1-336e-4b42-89c8-d2b170ee422a" />
+
+
 ## What you can do
 
 - **Download a batch of videos.** Paste multiple links, including a list of 50, and start them together. Videos are processed in sequence; playlist links are supported too.
