@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import importlib.metadata
 import platform
+import re
 import struct
 import subprocess
 import sys
@@ -10,6 +11,18 @@ from pathlib import Path
 
 sys.dont_write_bytecode = True
 ROOT = Path(__file__).resolve().parent
+
+
+def windows_version(version: str) -> tuple[int, int, int, int]:
+    """Map a patch revision letter to the fourth Windows version component."""
+    match = re.fullmatch(r"(\d+)\.(\d+)\.(\d+)([a-z]?)", version)
+    if match is None:
+        raise ValueError(f"Unsupported release version: {version}")
+    major, minor, patch, revision = match.groups()
+    numbers = (int(major), int(minor), int(patch), ord(revision) - ord("a") + 1 if revision else 0)
+    if any(number > 65535 for number in numbers):
+        raise ValueError("Windows version components must fit in 16 bits.")
+    return numbers
 
 
 def build() -> Path:
@@ -35,12 +48,12 @@ def build() -> Path:
     work = ROOT / "build"
     work.mkdir(exist_ok=True)
     version_file = work / "version.txt"
-    numbers = tuple(int(part) for part in __version__.split(".")) + (0,)
+    numbers = windows_version(__version__)
     version_file.write_text(
         f"VSVersionInfo(ffi=FixedFileInfo(filevers={numbers!r}, prodvers={numbers!r}, "
         "mask=0x3f, flags=0x0, OS=0x40004, fileType=0x1, subtype=0x0, date=(0, 0)), kids=["
         "StringFileInfo([StringTable('040904B0', ["
-        f"StringStruct('CompanyName', 'Xefandez'), StringStruct('FileDescription', {APP_NAME!r}), "
+        f"StringStruct('CompanyName', 'Xefande'), StringStruct('FileDescription', {APP_NAME!r}), "
         f"StringStruct('FileVersion', '{__version__}'), StringStruct('ProductVersion', '{__version__}'), "
         f"StringStruct('ProductName', {APP_NAME!r}), StringStruct('OriginalFilename', 'YTDownloader.exe')])]), "
         "VarFileInfo([VarStruct('Translation', [1033, 1200])])])\n",

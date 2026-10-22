@@ -4,7 +4,7 @@
 
 A free, ad-free Windows app for downloading YouTube VODs, audio and subtitles. Built for streamers, video editors and localization teams who want their files ready to work with.
 
-**Version 1.4.1** · **Windows 10/11 x64** · **No Python installation needed for the release ZIP**
+**Version 1.4.1b** · **Windows 10/11 x64** · **No Python installation needed for the release ZIP**
 
 **Official website:** [youtubedownloader.xefande.com](https://youtubedownloader.xefande.com/)
 
@@ -12,7 +12,7 @@ A free, ad-free Windows app for downloading YouTube VODs, audio and subtitles. B
 
 ## Get started
 
-1. Download `YouTube-Downloader-v1.4.1-win64.zip` from [Releases](https://github.com/Xefande/YoutubeDownloader/releases).
+1. Download `YouTube-Downloader-v1.4.1b-win64.zip` from [Releases](https://github.com/Xefande/YoutubeDownloader/releases).
 2. Extract the complete ZIP and run `Install.cmd`.
 3. Open **YouTube Downloader** from the Desktop or Start Menu.
 4. Paste your YouTube links, one per line, and choose an output folder.
@@ -62,6 +62,8 @@ The installer uses `%LOCALAPPDATA%\YTDownloader` and creates **YouTube Downloade
 
 **Update tools** updates the download components. To update the application itself, install a newer release ZIP.
 
+The **1.4.1b release ZIP** includes self-signed Authenticode signatures as **Xefande** on the application and its PowerShell installer scripts, plus the public `publisher.cer` certificate. The private key is not included. This is a self-declared publisher identity; Windows does not automatically trust it, so SmartScreen warnings may still appear. The installer does not add the certificate to Windows trust stores.
+
 ## A few useful details
 
 **Why MKV for 1440p and 4K?** The high-resolution presets use MKV to combine the available video and audio streams. The lower-resolution presets prefer H.264 video and AAC audio in MP4, with fallbacks when those formats are unavailable.
@@ -97,3 +99,5 @@ To build the Windows executable:
 `Build.cmd` creates a `.venv-build` environment, installs the pinned dependencies and produces **`dist\YTDownloader.exe`**, including the application icon and version information. Use **Update tools** before the first download from a source run or a source-built EXE to obtain Deno and FFmpeg.
 
 The `buildcore/` folder contains the installer and uninstaller source files and a default configuration. Those scripts require a complete release payload in their `app/` folder. `Build.cmd` builds the standalone EXE; it does not assemble the installer ZIP.
+
+Source builds produce an **unsigned** developer EXE with display version `1.4.1b` and numeric Windows version `1.4.1.2`. The official release ZIP is signed separately as Xefande; rebuilding the source does not reproduce that signature.

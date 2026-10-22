@@ -1,5 +1,27 @@
 # Changelog
 
+## 1.4.1b - 2026-10-22
+
+- Add self-signed Authenticode signatures as **Xefande** to `YTDownloader.exe`, `install.ps1` and `shortcuts.ps1` in the official release ZIP.
+- Include the public `publisher.cer` certificate and signature evidence in the package. No private key is distributed and no certificate is installed into Windows trust stores.
+- A self-signed certificate does not establish automatic Windows trust or Microsoft certification; SmartScreen warnings can still appear.
+- Keep the displayed version `1.4.1b` and numeric Windows file/product version `1.4.1.2` consistent. Support the revision letter in the public source build and set its company metadata to **Xefande**.
+- Preserve the application behavior, artwork, settings and bundled tools from 1.4.1. Public source builds remain unsigned.
+
+### Download verification
+
+**Package:** `YouTube-Downloader-v1.4.1b-win64.zip`
+
+**Size:** 183,777,271 bytes
+
+**SHA256:**
+
+```text
+64836f17d313f18de692b88bf3e359d247bfc17347f40ec7b70656dc361cf668
+```
+
+The signed release passed 94 automated tests, package validation and cryptographic signature/content verification.
+
 ## 1.4.1
 
 A refreshed Windows release with a clearer dark interface, updated download tools and improved installation and download feedback. This summary covers the changes since the previous public release, 1.1.0.
@@ -33,9 +55,11 @@ A refreshed Windows release with a clearer dark interface, updated download tool
 
 ### Bundled components
 
+The latest stable download tool versions were checked on **2026-10-22** and are included in the release ZIP. No first-use **Update tools** step is required.
+
 | Component | Version |
 | --- | --- |
-| yt-dlp | 2026.8.19 |
+| yt-dlp | 2026.10.21 |
 | yt-dlp-ejs | 0.8.0 |
 | Deno | 2.9.8 |
 | FFmpeg, FFprobe and FFplay | 9.0.2 |
@@ -52,12 +76,12 @@ No prior uninstall is required. Existing settings and downloads are preserved. F
 ### Download verification
 
 **Package:** `YouTube-Downloader-v1.4.1-win64.zip`  
-**Size:** 183,738,532 bytes
+**Size:** 183,751,298 bytes
 
 **SHA256:**
 
 ```text
-49e7313bc1ceb46cd29b62dbcbeb5473f7dbeee05b2878c595dc3eeb7a0cfa75
+fffefb58c9a27af54dbddd66201706da46ff5ce95b78078c98c46c601b5aff4f
 ```
 
 ### For developers
